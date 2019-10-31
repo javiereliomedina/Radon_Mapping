@@ -57,13 +57,21 @@
     plot(SPDF, add = T, col = "blue")
  
 # Geology 1:5M ####
+  # Download from BGR
   # Asch, K. (2005): IGME 5000: 1 : 5 Million International Geological Map 
   # of Europe and Adjacent Areas - final version for the internet.- BGR, Hannover
   # https://produktcenter.bgr.de/terraCatalog/DetailResult.do?fileIdentifier=9FD6624C-0AA7-46D4-9DA3-955E558CD5F1 
+    IGME5000_url <- "https://download.bgr.de/bgr/Geologie/IGME5000/shp/IGME5000.zip" 
+    temp <- tempfile()
+    temp2 <- tempfile()
+    download.file(IGME5000_url, temp)
+    unzip(zipfile = temp, exdir = temp2)
+    IGME5000 <- read_sf(file.path(temp2, "europe/data/IGME5000_europeEPSG3034shp_geology_poly_v01.shp"))
+    unlink(c(temp, temp2))
     
-    IGME5000_path <- "C:/Users/elioj/Documents/GitHub/Radon_Mapping/Rdata/IGME5000"  # WARNING My local path, you may need to put yours
-    IGME5000 <- read_sf(file.path(IGME5000_path, "IGME5000_europeEPSG3034shp_geology_poly_v01.shp"))
     st_crs(IGME5000)
+    st_crs(Country)
+    
     IGME5000 <- IGME5000 %>%
       st_transform(4326) %>%
       st_intersection(Country)
