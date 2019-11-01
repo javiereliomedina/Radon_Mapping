@@ -1,8 +1,6 @@
-#########################################################
-#########    Data exploration    ########################
-#########################################################
 
-  
+# Data exploration     
+
   library(sf)
   library(StatDA)
   library(MASS)
@@ -10,30 +8,38 @@
 
   summary(InRn)
  
-# Histogram (Rn)
-  hist(InRn$Rn, col = "red", breaks = 10, prob = T
-       , main = "Histogram Indoor Radon"
-       , xlab = expression("Rn " * "[Bq" * m^-3 * "]")
-      )
-  qqplot.das(InRn$Rn, distribution = "norm", col = 1, envelope = 0.95,datax=T, main = "Q-Q plot (InRn)")
+## Histogram (Rn) ----
+  hist(InRn$Rn,
+       prob = T,
+       col = "red",
+       breaks = 10, 
+       main = "Histogram Indoor Radon",
+       xlab = expression("Rn " * "[Bq" * m^-3 * "]"))
+  qqplot.das(InRn$Rn,
+             distribution = "norm",
+             col = 1, envelope = 0.95, 
+             datax = T,
+             main = "Q-Q plot (InRn)")
   
-# Box-Cox transformation 
-  BCT <- boxcox(InRn$Rn~1, lambda = seq(-1, 1, 1/100))
+## Box-Cox transformation ----
+  BCT <- boxcox(InRn$Rn ~ 1, lambda = seq(-1, 1, 1/100))
   title("Box-Cox Transformation")
   BCT <- as.data.frame(BCT)
-  # lambda <- BCT[BCT$y==max(BCT$y),]$x # -0.17
+  # lambda <- BCT[BCT$y == max(BCT$y), ]$x # -0.17
   # InRn$BCT <- (InRn$Rn^lambda-1)/lambda
   lambda <- 0
   InRn$LogRn <- log(InRn$Rn)                 
   
-# Histogram (logRn) 
-  hist(InRn$LogRn, col = "red", breaks = 30, prob = T
-       , main = "Histogram Indoor Radon"
-       , xlab = expression("LogRn " * "[Bq" * m^-3 * "]")
-        )
+## Histogram (logRn) ----
+  hist(InRn$LogRn,
+       col = "red",
+       breaks = 30,
+       prob = T,
+       main = "Histogram Indoor Radon",
+       xlab = expression("LogRn " * "[Bq" * m^-3 * "]"))
   qqplot.das(InRn$LogRn, distribution = "norm", col = 1, envelope = 0.95,datax=T, main = "Q-Q plot (log InRn)")
   
-# ROS: “ROBUST” IMPUTATION METHOD 
+## ROS: “ROBUST” IMPUTATION METHOD ----
   DL <- 10 
   InRn_DL <- InRn
   InRn_DL$Rn_Cen <- "FALSE"
@@ -45,17 +51,27 @@
   InRn_DL[InRn_DL$Rn_Cen == "TRUE",]["Rn"] <- ROS[ROS$censored == "TRUE",]["modeled"]
   InRn_DL$LogRn <- log(InRn_DL$Rn)
   
-# q-q plots
+## q-q plots ----
   par(mfrow=c(1,2))  
-  qqplot.das(InRn$LogRn,    distribution = "norm", col = 1, envelope = 0.95, datax = T, main = "Original data") 
-  qqplot.das(InRn_DL$LogRn, distribution = "norm", col = 1, envelope = 0.95, datax = T, main = "After ROS")
+  qqplot.das(InRn$LogRn,
+             distribution = "norm",
+             col = 1,
+             envelope = 0.95,
+             datax = T,
+             main = "Original data") 
+  qqplot.das(InRn_DL$LogRn,
+             distribution = "norm",
+             col = 1,
+             envelope = 0.95,
+             datax = T,
+             main = "After ROS")
   
   mean(InRn$Rn)
   sd(InRn$Rn)  
   exp(mean(InRn$LogRn))
   exp(sd(InRn$LogRn))
   RL <- 200 # Bq m-3
-  100*(1-pnorm(log(RL), mean = mean(InRn$LogRn), sd = sd(InRn$LogRn)))
+  100*(1 - pnorm(log(RL), mean = mean(InRn$LogRn), sd = sd(InRn$LogRn)))
   
   mean(InRn_DL$Rn)
   sd(InRn_DL$Rn)  
@@ -63,51 +79,57 @@
   exp(sd(InRn_DL$LogRn))
   100*(1-pnorm(log(RL), mean = mean(InRn_DL$LogRn), sd = sd(InRn_DL$LogRn)))
 
-# Histogram (logRn) 
+## Histogram (logRn) ----
   par(mfrow=c(1,2)) 
-  hist(InRn$LogRn, col = "red", breaks = 30, prob = T
-       , ylim = c(0, 0.5)
-       , main = "Origical data"
-       , xlab = expression("LogRn " * "[Bq" * m^-3 * "]")
-        )
-  hist(InRn_DL$LogRn, col = "red", breaks = 30, prob = T
-       , ylim = c(0, 0.5)
-       , main = "After ROS"
-       , xlab = expression("LogRn " * "[Bq" * m^-3 * "]")
-        )
+  hist(InRn$LogRn,
+       col = "red",
+       breaks = 30,
+       prob = T,
+       ylim = c(0, 0.5),
+       main = "Origical data",
+       xlab = expression("LogRn " * "[Bq" * m^-3 * "]"))
+  hist(InRn_DL$LogRn,
+       col = "red",
+       breaks = 30,
+       prob = T,
+       ylim = c(0, 0.5),
+       main = "After ROS",
+       xlab = expression("LogRn " * "[Bq" * m^-3 * "]"))
  
-# Histogram, boxplot, q-q plot 
+## Histogram, boxplot, q-q plot ----
   par(mfrow = c(1,3))
-  hist(InRn_DL$LogRn, col = "red"
-             , breaks = 30
-             , prob = T, main = "Histogram"
-             , xlab = expression("LogRn " * "[Bq" * m^-3 * "]")
-             )
+  hist(InRn_DL$LogRn,
+       col = "red",
+       breaks = 30,
+       prob = T,
+       main = "Histogram",
+       xlab = expression("LogRn " * "[Bq" * m^-3 * "]"))
   lines(density(InRn_DL$LogRn), lwd = 1)
-  boxplot(InRn_DL$LogRn
-             , notch = TRUE, col=2
-             , varwidth = TRUE
-             , main = "Boxplot"
-             , ylab = "Lognormal transformation"
-             , xlab = expression("LogRn " * "[Bq" * m^-3 * "]")
-             )
-  qqplot.das(InRn_DL$LogRn
-             , distribution = "norm", col = 1, envelope = 0.95
-             , datax = T
-             , ylab = "Observed Value"
-             , xlab = "Expected Normal Value"
-             , main = ("Normal Q-Q plot")
-             , line = "quartiles"
-             , pch = 3
-             , cex = 0.7
-             , xaxt = "s"
-             )  
   
-#####################################################################
-################   Spatial distribution         #####################
-#####################################################################
+  boxplot(InRn_DL$LogRn,
+          notch = TRUE,
+          col=2,
+          varwidth = TRUE,
+          main = "Boxplot",
+          ylab = "Lognormal transformation",
+          xlab = expression("LogRn " * "[Bq" * m^-3 * "]"))
+  
+  qqplot.das(InRn_DL$LogRn,
+             distribution = "norm",
+             col = 1,
+             envelope = 0.95,
+             datax = T,
+             ylab = "Observed Value",
+             xlab = "Expected Normal Value",
+             main = ("Normal Q-Q plot"),
+             line = "quartiles",
+             pch = 3,
+             cex = 0.7,
+             xaxt = "s")  
 
-# Plot InRn measurements in Bq/m3 (with ggplot2)
+# Spatial distribution ----
+
+## Plot InRn measurements in Bq/m3 (with ggplot2) ----
   P_Rn <- ggplot() +
     geom_sf(data = Grids_10km) + 
     geom_sf(data = InRn_DL, aes(color = Rn)) + 
@@ -115,7 +137,7 @@
     ggtitle("Indoor radon measurements (Simulated)")
   P_Rn
     
-# Change intervale in the Rn scale 
+## Change intervale in the Rn scale ----
   breaks <- c(0, 50, 100, 200, 300, 500, max(InRn_DL$Rn))
   InRn_DL <- InRn_DL %>% mutate(brks = cut(Rn, breaks, include.lowest = T, right = F))
   cols <- colorRampPalette(c("blue", "red"))(6)
@@ -130,12 +152,11 @@
     ggtitle("Indoor radon measurements (Simulated)") 
   P_Rn_brks
   
-# Plot if Rn is higher than Reference level (1) or not (0) 
+## Plot if Rn is higher than Reference level (1) or not (0) ----
   # Transform InRn to: 1 if Rn >= RL or 0 if Rn < RL ("Case")   
     RL <- 200 # Bq m-3
     InRn_DL <- InRn_DL %>% mutate(Case = as.factor(ifelse(Rn >= 200, yes = 1, no = 0))) 
 
-  # Plot with ggplot2 
     P_Cases <- ggplot() +
       geom_sf(data = Grids_10km) + 
       geom_sf(data = InRn_DL, aes(fill = Case, color = Case)) +
@@ -145,14 +166,14 @@
       ggtitle("Indoor radon measurements (Simulated)")  
     P_Cases
     
-# Kernel density plots
-# The resulting density map is “noisier” for small bandwidth (h)
-# and “smoother” for large bandwidth (h).  
-# A rule-of-thumb for an optimal value is h ≈ max(sx, sy)*0.7*n^-0.2 
-# where n is the number of points, 
-# and sx and sy the standard deviations of x- and y- coordinates of the points
-# See printed version of the EU Atlas for further information (in progress)
-# 2.4. Statistics, measurements, maping (part wirtten by P. Bossew) 
+## Kernel density plots ----
+  # The resulting density map is “noisier” for small bandwidth (h)
+  # and “smoother” for large bandwidth (h).  
+  # A rule-of-thumb for an optimal value is h ≈ max(sx, sy)*0.7*n^-0.2 
+  # where n is the number of points, 
+  # and sx and sy the standard deviations of x- and y- coordinates of the points
+  # See printed version of the EU Atlas for further information (in progress)
+  # 2.4. Statistics, measurements, maping (part wirtten by P. Bossew) 
  
   # All dwelling sampled (e.g. for detecting possible clusters; avoid overplotting)
     H <- st_coordinates(InRn_DL)
@@ -213,10 +234,7 @@
     grid.arrange(KP_No_Cases, KP_Cases, nrow = 2)
     grid.arrange(KP_No_Cases, KP_Cases, nrow = 1)
 
-#####################################################    
-#########         InRn vs Geologia        ###########
-#####################################################
-    
+# InRn vs Geologia ----
   P_BG <- ggplot() +
       geom_sf(data = Country) + 
       geom_sf(data = IGME5000,  aes(fill = AgeName), colour = NA) + 
@@ -225,10 +243,10 @@
       ggtitle("Geology 1:1M") 
   P_BG
   
-# Intersect
+## Intersect ----
   InRn_DL_BG <- st_intersection(InRn_DL, IGME5000)  
 
-# Boxplots
+## Boxplots ----
   par(mar = c(9,5,3,0.5), oma = c(0, 0.5, 0.5, 0.5), mfrow = c(1,1))
   boxplot(LogRn ~ AgeName, InRn_DL_BG, col = 2, 
           varwidth = TRUE,
@@ -236,10 +254,9 @@
           las = 2,
           ylab = expression("LogRn " * "[Bq" * m^-3 * "]"),
           xlab = "",
-          main = "Geology (AgeName)"
-  )
-
-# ANOVA 
+          main = "Geology (AgeName)")
+ 
+# ANOVA ----
   lm_BG <- lm(LogRn ~ AgeName, InRn_DL_BG)
   summary(lm_BG)
   anova(lm_BG)
