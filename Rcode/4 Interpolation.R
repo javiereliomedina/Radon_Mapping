@@ -1,14 +1,12 @@
-##########################################################
-###################   Interpolation     ##################
-##########################################################
+
+#   Interpolation     ----
 
   library(sf)
   library(gstat)
   library(gridExtra)
   library(tidyverse)
 
-
-# Prediction by grids of 0.015 x 0.015 degrees
+## Prediction by grids of 0.015 x 0.015 degrees ----
   InRn_Pred <- st_make_grid(Country, cellsize = .015, what = "polygons")
   InRn_Pred <- st_sf(InRn_Pred)
   SPDF <- st_centroid(InRn_Pred) # predict in the center of the grid 
@@ -16,11 +14,9 @@
   plot(InRn_Pred, reset = F)
   plot(SPDF, add = T, col = 2, pch = 16, cex = 0.7)
     
-################################################################
-#####     Inverse distance weighted interpolation (IDW)    #####
-################################################################
+## Inverse distance weighted interpolation (IDW)    ----
 
-## Optimal idp (10 k-fold Croos Validation)
+### Optimal idp (10 k-fold Croos Validation) ----
     data <- InRn_DL
     res <- numeric()
     IDP_RMSE <- numeric()
@@ -32,12 +28,11 @@
       for (i in 1:k) {
         m_model <- data[folds != i, ]
         m_valid <- data[folds == i, ]
-        m_valid_pred <- idw(Rn ~ 1 , m_model, m_valid
-                            , nmax = 100
-                            , maxdist = 40
-                            , nmin = 5
-                            , idp = idp[j]
-        )
+        m_valid_pred <- idw(Rn ~ 1 , m_model, m_valid,
+                            nmax = 100,
+                            maxdist = 40,
+                            nmin = 5,
+                            idp = idp[j])
         res  <- m_valid$Rn - m_valid_pred$var1.pred 
         IDP_RMSE[i] <- sqrt(mean(res^2))
       } 
@@ -54,15 +49,15 @@
     abline(h = seq(100,200,2), lty = 2, lwd = 1.5, col = "gray")
     title("10-fold cross-validation")
   
-## IDW (optimal idp = 2)
-    Pred_IDW <- idw(Rn ~ 1 , InRn_DL, SPDF
-                    , nmax = 100
-                    , maxdist = 40 # km; Unprojected data: great-circle distance; For projected data Euclidian distances are computed 
-                    , nmin = 5
-                    , idp = 2)
+### IDW (optimal idp = 2) ----
+    Pred_IDW <- idw(Rn ~ 1 , InRn_DL, SPDF,
+                    nmax = 100,
+                    maxdist = 40, # km; Unprojected data: great-circle distance; For projected data Euclidian distances are computed 
+                    nmin = 5,
+                    idp = 2)
     SPDF$IDW_Pred <- Pred_IDW$var1.pred
     
-## Plot map (grids cells of 0.015 x 0.015 degrees)
+### Plot map (grids cells of 0.015 x 0.015 degrees) ----
       InRn_Pred$IDW_Pred <- Pred_IDW$var1.pred
     # Breaks 
       breaks <- c(0, 50, 100, 200, 300, 500, max(InRn_Pred$IDW_Pred, na.rm = T))
@@ -78,16 +73,18 @@
         ggtitle("IDW - Predictions") 
       P_IDW_Pred
 
-#########################################################    
-##########       Ordinary Kriging        ################
-#########################################################
+## Ordinary Kriging  ----
     
-## Variogram (gstat)
+### Variogram (gstat) ----
     vg <- variogram(LogRn ~ 1, InRn_DL)   # great-circle distances (km)
     vg_fit_Sph <- fit.variogram(vg, vgm("Sph"))
     vg_fit_Exp <- fit.variogram(vg, vgm("Exp"))
-    plot(gamma~dist, vg, ylim = c(0, 1.05*max(vg$gamma)), col = 1
-         , ylab ="semivariance", xlab = 'distance', main = "Variogram")
+    plot(gamma ~ dist, vg,
+         ylim = c(0, 1.05*max(vg$gamma)),
+         col = 1,
+         ylab = "semivariance",
+         xlab = 'distance',
+         main = "Variogram")
     lines(variogramLine(vg_fit_Sph, 100), col = 'red') 
     lines(variogramLine(vg_fit_Exp, 100), col = 'blue')
     vg_fit <- vg_fit_Exp
@@ -103,10 +100,10 @@
         V_Env[[i]] <- vg_RP 
       }
       
-      vg_fit_Table <- data.frame(Model = vg_fit$model
-                                 , psill = round(vg_fit$psill,2)
-                                 , range = round(vg_fit$range,2)
-                                 #, kappa = round(vg_fit$kappa,2)
+      vg_fit_Table <- data.frame(Model = vg_fit$model,
+                                 psill = round(vg_fit$psill, 2),
+                                 range = round(vg_fit$range, 2),
+                                 # kappa = round(vg_fit$kappa, 2)
                                   )
       vg_Line <- cbind(variogramLine(vg_fit, maxdist = max(vg$dist)), id = "Model")
       
@@ -115,26 +112,25 @@
         geom_point() +
         geom_line(data = vg_Line, size = 0.8) +
         ylim(0,2.5) + 
-        annotation_custom(tableGrob(vg_fit_Table,rows = NULL)
-                          , xmin = 20, xmax = 45, ymin = 0.1, ymax = 1) + 
+        annotation_custom(tableGrob(vg_fit_Table,rows = NULL),
+                          xmin = 20, xmax = 45, ymin = 0.1, ymax = 1) + 
         ggtitle("Variogram")
 
-## Interpolation - TransGaussian kriging using Box-Cox transforms (gstat)
+### Interpolation - TransGaussian kriging using Box-Cox transforms (gstat) ----
     SPDF <- as_Spatial(SPDF)
     InRn_DL <- as_Spatial(InRn_DL)
     lambda <- 0
-    Pred_OK <- krigeTg(Rn ~ 1, InRn_DL, SPDF
-                       , model = vg_fit
-                       , lambda = lambda
-                       , maxdist = 40  # km (great-circle distances)
-                       , nmax = 100
-                       , nmin = 5
-    )   
+    Pred_OK <- krigeTg(Rn ~ 1, InRn_DL, SPDF,
+                       model = vg_fit,
+                       lambda = lambda,
+                       maxdist = 40,  # km (great-circle distances)
+                       nmax = 100,
+                       nmin = 5)   
     SPDF$OK_Pred <- Pred_OK$var1TG.pred   
     SPDF$OK_SD <- sqrt(Pred_OK$var1TG.var)
     SPDF$OK_RSD <- sqrt(Pred_OK$var1TG.var)/Pred_OK$var1TG.pred
 
-## Plot predictions (grids cells of 0.025 x 0.025 degrees)
+### Plot predictions (grids cells of 0.025 x 0.025 degrees) ----
     InRn_Pred$OK_Pred <- Pred_OK$var1TG.pred   
     InRn_Pred$OK_SD <- sqrt(Pred_OK$var1TG.var)
     InRn_Pred$OK_RSD <- sqrt(Pred_OK$var1TG.var)/Pred_OK$var1TG.pred
@@ -155,33 +151,34 @@
         ggtitle("OK - Predictions")
       P_OK_Pred
     
-#######################################################################
-################   Summarize by grids cells of 10 km x 10 km      #####
-#######################################################################
+#  Summarize by grids cells of 10 km x 10 km ----
   
-## Estimate the mean of the points in each grid cell of 10 km x 10 km (or municipalities, districts, ...)  
-    ggplot() +
-      geom_sf(data = Country) +
-      geom_sf(data = Grids_10km)+
-      geom_sf(data = SPDF, col = 2, cex = 0.7)
+## Estimate the mean of the points in each grid cell of 10 km x 10 km ----
+   # (or municipalities, districts, ...)
+   ggplot() +
+     geom_sf(data = Country) +
+     geom_sf(data = Grids_10km)+
+     geom_sf(data = SPDF, col = 2, cex = 0.7)
     
-## Intersect predictions (points - SPDF) and Grid cells of 10km x 10km (Grids_10km)  
+## Intersect predictions (points - SPDF) and Grid cells of 10km x 10km  ----
     SPDF_Grids10km <-  st_intersection(SPDF, Grids_10km) 
     summary(SPDF_Grids10km)
 
-## Sumarize (by Id)
+## Sumarize (by Id) ----
     SPDF_Grids10km_Sum <- SPDF_Grids10km %>% 
       group_by(Id) %>% 
       summarize(N = n(),
                 IDW_AM = mean(IDW_Pred, na.rm = T),
                 IDW_SD = sd(IDW_Pred, na.rm = T),
                 OK_AM  = mean(OK_Pred, na.rm = T), 
-                OK_SD  = sd(OK_Pred, na.rm = T)
-      )  
+                OK_SD  = sd(OK_Pred, na.rm = T))  
   
 ## Add values to Grid cells of 10 x 10 km (Grids_10km_Sum) 
-    Grids_10km_Sum <- left_join(Grids_10km_Sum %>% as.data.frame(), SPDF_Grids10km_Sum %>% as.data.frame(), by = "Id")
-    Grids_10km_Sum <- Grids_10km_Sum %>% st_sf(sf_column_name = "geometry.x")
+    Grids_10km_Sum <- left_join(Grids_10km_Sum %>% as.data.frame(),
+                                SPDF_Grids10km_Sum %>% as.data.frame(),
+                                by = "Id")
+    Grids_10km_Sum <- Grids_10km_Sum %>%
+      st_sf(sf_column_name = "geometry.x")
     summary(Grids_10km_Sum)   
     
 ## Plot maps
@@ -190,8 +187,7 @@
       breaks_OK  <- c(0, 25, 50, 75, 100, 200, max(Grids_10km_Sum$OK_AM, na.rm = T))
       Grids_10km_Sum <- Grids_10km_Sum %>% 
           mutate(IDW_brks = cut(IDW_AM, breaks_IDW, include.lowest = T, right = F),
-                 OK_brks  = cut(OK_AM , breaks_OK , include.lowest = T, right = F)
-                 )
+                 OK_brks  = cut(OK_AM , breaks_OK , include.lowest = T, right = F))
     # Maps 
       P_Grids10km_IDW <- ggplot() +
           geom_sf(data = Country) + 
@@ -205,7 +201,6 @@
           ggtitle("OK - Predictions")
     # Plot maps
       grid.arrange(P_Grids10km_AM, P_Grids10km_IDW, P_Grids10km_OK, nrow = 1, ncol = 3)
-
       
 ## Export results to shape file (.shp) for GIS: InRn_Pred and  Grids_10km_Sum
       st_write(InRn_Pred, "InRn_Pred.shp", delete_layer = TRUE)           # overwrites
