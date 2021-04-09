@@ -124,7 +124,7 @@
   points <- as_Spatial(points)                
   # define the gstat object (spatial model)
   library(gstat)
-  g_dummy <- gstat(formula = z ~ 1
+  g_dummy <- gstat(formula = z ~ 1,
                    locations = ~ X + Y,
                    dummy = T,
                    beta = 3,
