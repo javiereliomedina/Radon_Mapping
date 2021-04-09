@@ -35,10 +35,12 @@
    plot(Grids_10km["Id"])
     
 ## Make our own grid (e.g. 0.1 x 0.1 degrees)
-   Grids <- st_make_grid(Country, cellsize = 0.1, what = "polygons") %>%
-     st_sf() %>%
-     st_intersection(Country) %>%
-     mutate(Id = seq(1, dim(Grids)[1], 1))
+   Grids <- Country %>% 
+    st_make_grid(cellsize = 0.1, what = "polygons") %>%
+    st_sf() %>%
+    st_intersection(Country) %>%
+    # Name grids as "g001", "g002"
+    mutate(ID = paste0("g", stringr::str_pad(seq(1, nrow(.), 1), 3, pad = "0")))
    SPDF  <- st_centroid(Grids) # Centroid of the grid
    plot(Country["NAME_0"], reset = F, main = "Lithuania: cells 0.1x0.1 degrees")
    plot(Grids, add = T, border = 2)
