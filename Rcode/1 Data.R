@@ -141,5 +141,6 @@
   # Final result: Simulated indoor radon dataset (InRn) in Bq m-3
   InRn <- points[,"Rn"]
   InRn[InRn$Rn <= 10,] <- 5   # Detection Limit (DL): 10 Bq m-3 (replaced by half of the Limit of Detection)
-  InRn <- as(InRn, "sf")
+  InRn <- as(InRn, "sf") %>% 
+    st_transform(crs = "EPSG:4326")
   
