@@ -7,7 +7,6 @@
         "ggspatial",
         "sp",  
         "rgdal",
-        "geoR",
         "gstat",
         "MASS",
         "StatDA",
